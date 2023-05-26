@@ -32,15 +32,13 @@ def calculate_embeddings(strings, embedding_model, batch_size):
 file_path = 'resources/show_notes.txt'
 line_breaker = '---'
 
-output_list = read_file_with_custom_line_breaker(file_path, line_breaker)
-for i in range(7):
-    print(f"string {i}: {output_list[i]}")
-strings = output_list[0:7]
-
+string_list = read_file_with_custom_line_breaker(file_path, line_breaker)
+for i in range(len(string_list)):
+    print(f"string {i}: {string_list[i]}\n")
 
 # calculate embeddings
 EMBEDDING_MODEL = "text-embedding-ada-002"  # OpenAI's best embeddings as of Apr 2023
 BATCH_SIZE = 1000  # you can submit up to 2048 embedding inputs per request
 SAVE_PATH = "resources/show_notes_embeddings.csv"
-df = calculate_embeddings(strings, EMBEDDING_MODEL, BATCH_SIZE)
+df = calculate_embeddings(string_list, EMBEDDING_MODEL, BATCH_SIZE)
 df.to_csv(SAVE_PATH, index=False)
