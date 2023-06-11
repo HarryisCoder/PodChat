@@ -8,13 +8,14 @@ def read_file_with_custom_line_breaker(file_path, line_breaker):
     try:
         with open(file_path, 'r') as file:
             content = file.read().split(line_breaker)
+            content.reverse()
             return [line.strip() for line in content if line.strip()]
     except FileNotFoundError:
         print(f"File not found: {file_path}")
     except IOError:
         print(f"Error reading file: {file_path}")
 
-def calculate_embeddings(strings, embedding_model, batch_size):
+def calculate_embeddings(csv_file_path, strings, embedding_model, batch_size):
     embeddings = []
     for batch_start in range(0, len(strings), batch_size):
         batch_end = batch_start + batch_size
@@ -26,19 +27,50 @@ def calculate_embeddings(strings, embedding_model, batch_size):
         batch_embeddings = [e["embedding"] for e in response["data"]]
         embeddings.extend(batch_embeddings)
     df = pd.DataFrame({"text": strings, "embedding": embeddings})
-    return df
+    df.to_csv(SAVE_PATH, index=False)
+
+def calculate_new_embeddings_only(csv_file_path, strings, embedding_model, batch_size):
+    embeddings = []
+    df = pd.read_csv(csv_file_path)
+    # print(df.head())
+    # Get the size of the DataFrame
+    num_rows, num_cols = df.shape
+    # Print the data frame size
+    # print(f"Number of rows: {num_rows}")
+    # print(f"Number of columns: {num_cols}")
+    new_start_idx = num_rows
+    for batch_start in range(new_start_idx, len(strings), batch_size):
+        batch_end = batch_start + batch_size
+        batch = strings[batch_start:batch_end]
+        print(f"Batch {batch_start} to {len(batch)-1}")
+        response = openai.Embedding.create(model=embedding_model, input=batch)
+        for i, be in enumerate(response["data"]):
+            assert i == be["index"]  # double check embeddings are in same order as input
+        batch_embeddings = [e["embedding"] for e in response["data"]]
+        embeddings.extend(batch_embeddings)
+    new_df = pd.DataFrame({"text": strings[new_start_idx:], "embedding": embeddings})
+    new_df_rows = new_df.shape[0]
+    if new_df_rows > 0:
+        df = pd.concat([df, new_df], ignore_index=True)
+        df.to_csv(SAVE_PATH, index=False)
+        print(f"{new_df_rows} more embeddings generated!")
+        print(f"{df.tail()}")
+    else:
+        print("No new show notes found and no new embeddings generated.")
+        print(f"{df.tail()}")
 
 # segment show notes into strings
 file_path = 'resources/show_notes.txt'
 line_breaker = '---'
 
 string_list = read_file_with_custom_line_breaker(file_path, line_breaker)
-for i in range(len(string_list)):
-    print(f"string {i}: {string_list[i]}\n")
+# for i in range(len(string_list)):
+#     print(f"string {i}: {string_list[i]}\n")
 
 # calculate embeddings
 EMBEDDING_MODEL = "text-embedding-ada-002"  # OpenAI's best embeddings as of Apr 2023
 BATCH_SIZE = 1000  # you can submit up to 2048 embedding inputs per request
 SAVE_PATH = "resources/show_notes_embeddings.csv"
-df = calculate_embeddings(string_list, EMBEDDING_MODEL, BATCH_SIZE)
-df.to_csv(SAVE_PATH, index=False)
+# calculate_embeddings(SAVE_PATH, string_list, EMBEDDING_MODEL, BATCH_SIZE)
+calculate_new_embeddings_only(SAVE_PATH, string_list, EMBEDDING_MODEL, BATCH_SIZE)
+# df.to_csv(SAVE_PATH, index=False)
