@@ -26,8 +26,7 @@ EMBEDDING_MODEL = "text-embedding-ada-002"
 GPT_MODEL = "gpt-3.5-turbo"
 
 #API key
-# openai.api_key = os.environ["OPENAI_API_KEY"]
-openai.api_key = "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"
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 # embedding source
 embeddings_path = "resources/show_notes_embeddings.csv"
