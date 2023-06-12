@@ -16,6 +16,8 @@ st.sidebar.info(
        \n- \"请推荐一期和面试相关的节目\"
        \n- \"有没有让人开心的节目\"
        \n- \"请推荐一期适合星期五听的节目\"
+       \n- \"工作太累了，我想放松\"
+       \n- \"关于高考选专业的建议\"
        '''
     )
 
@@ -68,7 +70,7 @@ def query_message(
 ) -> str:
     """Return a message for GPT, with relevant source texts pulled from a dataframe."""
     strings, relatednesses = strings_ranked_by_relatedness(query, df, top_n=5)
-    introduction = '请根据以下播客单集简介推荐一或两期和提问最相关的节目，同时满足以下三个要求：1.如果找到相关节目，请在回答时包含完整的节目标题“xxx期节目《xxx》”并提供相关内容的时间戳“在xx:xx节目聊到了xxx” 2. 如果找不到答案则以“哎呀，我没有找到直接相关的节目，但是我想为你推荐”作为开头从所给播客单集简介中随机推荐一期节目。3. 不要篡改节目标题 4. 不要回答和节目不相关的内容'
+    introduction = '请根据以下播客单集简介推荐一或两期和提问最相关的节目，同时满足以下三个要求：1.请在回答时包含完整的节目标题：“xxx期节目《xxx》” 2.请提供相关节目内容的时间戳信息：“在xx:xx节目聊到了xxx” 3.如果找不到答案则以“我想为你推荐”作为开头从所给播客单集简介中随机推荐一期节目。4.不要回答和节目不相关的内容'
     question = f"\n\nQuestion: {query}"
     message = introduction
     for string in strings:
