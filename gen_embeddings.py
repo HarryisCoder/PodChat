@@ -20,7 +20,7 @@ def calculate_embeddings(csv_file_path, strings, embedding_model, batch_size):
     for batch_start in range(0, len(strings), batch_size):
         batch_end = batch_start + batch_size
         batch = strings[batch_start:batch_end]
-        print(f"Batch {batch_start} to {len(batch)-1}")
+        print(f"Batch {batch_start} to {batch_end}")
         response = openai.Embedding.create(model=embedding_model, input=batch)
         for i, be in enumerate(response["data"]):
             assert i == be["index"]  # double check embeddings are in same order as input

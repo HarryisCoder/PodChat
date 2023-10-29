@@ -23,7 +23,8 @@ st.sidebar.info(
 
 # models
 EMBEDDING_MODEL = "text-embedding-ada-002"
-GPT_MODEL = "gpt-3.5-turbo"
+GPT_MODEL = "gpt-4"
+ENCODING_NAME = "cl100k_base"
 
 #API key
 openai.api_key = os.environ["OPENAI_API_KEY"]
@@ -55,9 +56,10 @@ def strings_ranked_by_relatedness(
     strings, relatednesses = zip(*strings_and_relatednesses)
     return strings[:top_n], relatednesses[:top_n]
 
-def num_tokens(text: str, model: str = GPT_MODEL) -> int:
+def num_tokens(text: str, encoding_name: str = ENCODING_NAME) -> int:
     """Return the number of tokens in a string."""
-    encoding = tiktoken.encoding_for_model(model)
+    encoding = tiktoken.get_encoding(encoding_name)
+    # encoding = tiktoken.encoding_for_model(model)
     return len(encoding.encode(text))
 
 
@@ -70,17 +72,15 @@ def query_message(
     """Return a message for GPT, with relevant source texts pulled from a dataframe."""
     strings, relatednesses = strings_ranked_by_relatedness(query, df, top_n=5)
     introduction = '请根据以下播客单集简介推荐一或两期和提问最相关的节目，同时满足以下三个要求：1.请在回答时包含完整的节目标题：“xxx期节目《xxx》” 2.请提供相关节目内容的时间戳信息：“在xx:xx节目聊到了xxx” 3.如果找不到答案则以“我想为你推荐”作为开头从所给播客单集简介中随机推荐一期节目。4.不要回答和节目不相关的内容'
-    question = f"\n\nQuestion: {query}"
-    message = introduction
+    question = f"\n问题: {query}"
+    message = introduction + f'\n\n播客单集简介:\n'
     for string in strings:
-        next_article = f'\n\n播客单集简介:\n"""\n{string}\n"""'
-        if (
-            num_tokens(message + next_article + question, model=model)
-            > token_budget
-        ):
+        next_article = f'\n{string}\n\n'
+        if num_tokens(message + next_article + question) > token_budget:
             break
         else:
             message += next_article
+        # print(f"string: {string}, message: {message}")
     return message + question
 
 
@@ -94,9 +94,9 @@ def ask(
     """Answers a query using GPT and a dataframe of relevant texts and embeddings."""
     message = query_message(query, df, model=model, token_budget=token_budget)
     if print_message:
-        print(message)
+        print(f'DEBUG message:\n{message}')
     messages = [
-        {"role": "system", "content": "你作为播客小助手根据播客单集简介帮助回答用户问题"},
+        {"role": "system", "content": "你作为播客节目的小助手根据播客单集简介帮助回答用户问题"},
         {"role": "user", "content": message},
     ]
     response = openai.ChatCompletion.create(
@@ -126,7 +126,7 @@ def main():
     user_query = st.text_input("\"我是利玛逗😆，今天想听点啥？\"", "")
     if user_query != "":
         # Pass the query to the ChatGPT function
-        response = ask(user_query)
+        response = ask(user_query, print_message=True)
         return st.write(f"利玛逗😆: {response}")
 
 # call the main function
